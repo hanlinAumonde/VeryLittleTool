@@ -1,9 +1,8 @@
 # use tkinter to create a GUI that can choose a path and display the file information using functions in Function.py
 
 import tkinter as tk
-
 from tkinter import filedialog
-
+from tkinter import ttk
 from Function import getCalculatedList, getPath_StandardFormat, getListSorted
 
 class GUI:
@@ -17,66 +16,77 @@ class GUI:
         self.path.set("请选择文件夹路径")
         self.fileList = []
         
+        #self.image = tk.PhotoImage(file="./img/icon.png")
+        self.SortBySizeDsc = True
+        self.SortByTimeDsc = True
+        
         self.createWidgets()
     
     def createWidgets(self):
+
+        # 创建一个框架，用于放置标签和按钮
+        self.windowFrame1 = tk.Frame(self.window)
         # 创建一个标签，用于显示文件夹路径
-        self.label = tk.Label(self.window, textvariable=self.path, font=("Arial", 12), width=60, height=2)
-        self.label.pack()
+        label = tk.Label(self.windowFrame1 ,textvariable=self.path, font=("Arial", 12), width=60, height=2)
+        label.grid(row=0, column=0)
         
         # 创建一个按钮，用于选择文件夹路径
-        self.selectButton = tk.Button(self.window, text="选择文件夹", font=("Arial", 12), width=20, height=2, command=self.selectPath)
-        self.selectButton.pack()
-        
-        #以下按钮必须再选择文件夹路径后才能使用
-        
-        # 创建一个按钮,  用于根据文件大小排序
-        self.sortDscButton = tk.Button(self.window, text="按文件大小降序排序", font=("Arial", 12), width=20, height=2, command=lambda: self.sortBySize(True), state=tk.DISABLED)
-        self.sortDscButton.pack()
+        selectButton = tk.Button(self.windowFrame1, text="选择文件夹", font=("Arial", 12), width=20, height=2, command=self.selectPath)
+        selectButton.grid(row=1, column=0)    
+        self.windowFrame1.pack()    
 
-        self.sortAscButton = tk.Button(self.window, text="按文件大小升序排序", font=("Arial", 12), width=20, height=2, command=lambda: self.sortBySize(False), state=tk.DISABLED)
-        self.sortAscButton.pack()
+        # 创建一个Treeview，用于显示文件信息
+        self.tree = ttk.Treeview(self.window, columns=("name", "size", "time"), show="headings")
+        self.tree.heading("name", text="文件名")
+        self.tree.heading("size", text="文件大小", command=self.sortBySize)
+        self.tree.heading("time", text="最后修改时间", command=self.sortByTime)
+        self.tree.column("name", width=200)
+        self.tree.column("size", width=100)
+        self.tree.column("time", width=150)
 
-        # 创建一个按钮,  用于根据最后修改时间排序
-        self.sortTimeDscButton = tk.Button(self.window, text="按最后修改时间降序排序", font=("Arial", 12), width=20, height=2, command=lambda: self.sortByTime(True), state=tk.DISABLED)
-        self.sortTimeDscButton.pack()
+        self.tree.pack(fill=tk.BOTH, expand=True)
 
-        self.sortTimeAscButton = tk.Button(self.window, text="按最后修改时间升序排序", font=("Arial", 12), width=20, height=2, command=lambda: self.sortByTime(False), state=tk.DISABLED)
-        self.sortTimeAscButton.pack()
+        # 为Treeview的item绑定双击事件,但不包括heading
+        self.tree.bind("<Double-1>", self.onDoubleClickItem)
 
-        # 创建一个文本框，用于显示文件信息
-        self.text = tk.Text(self.window, font=("Arial", 12), width=80, height=30)
-        self.text.pack()
-    
     def selectPath(self):
         path = filedialog.askdirectory()
         self.path.set(path)
         if path:
             self.fileList = getCalculatedList(path)
-            self.sortAscButton.config(state=tk.NORMAL)
-            self.sortDscButton.config(state=tk.NORMAL)
-            self.sortTimeAscButton.config(state=tk.NORMAL)
-            self.sortTimeDscButton.config(state=tk.NORMAL)
+            self.updateTreeview()
 
-    def sortBySize(self, order:bool):
-        self.fileList = getListSorted(self.fileList, "size",order)
-        self.text.delete(1.0, tk.END)
-        for item in self.fileList:
-            self.text.insert(tk.END, f"文件名： {item.name}\n")
-            self.text.insert(tk.END, f"文件目录： {getPath_StandardFormat(item.path)}\n")
-            self.text.insert(tk.END, f"文件大小： {item.getSizeConverted()}\n")
-            self.text.insert(tk.END, f"最后修改时间： {item.getDateFormatted()}\n")
-            self.text.insert(tk.END, "-"*80 + "\n")
+    def onDoubleClickItem(self,event):
+        if self.tree.identify_region(event.x, event.y) == "heading":
+            return
+        if not self.tree.selection():
+            return
+        item = self.tree.selection()[0]
+        path = self.tree.item(item, "tags")[1]
+        if self.tree.item(item, "tags")[0] == "True":
+            self.path.set(path)
+            self.fileList = getCalculatedList(path)
+            self.updateTreeview()
+
+    def sortBySize(self):
+        self.fileList = getListSorted(self.fileList, "size", self.SortBySizeDsc)
+        self.SortBySizeDsc = not self.SortBySizeDsc
+        self.updateTreeview()
     
-    def sortByTime(self, order:bool):
-        self.fileList = getListSorted(self.fileList, "time",order)
-        self.text.delete(1.0, tk.END)
+    def sortByTime(self):
+        self.fileList = getListSorted(self.fileList, "time", self.SortByTimeDsc)
+        self.SortByTimeDsc = not self.SortByTimeDsc
+        self.updateTreeview()
+
+    def updateTreeview(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
         for item in self.fileList:
-            self.text.insert(tk.END, f"文件名： {item.name}\n")
-            self.text.insert(tk.END, f"文件目录： {getPath_StandardFormat(item.path)}\n")
-            self.text.insert(tk.END, f"文件大小： {item.getSizeConverted()}\n")
-            self.text.insert(tk.END, f"最后修改时间： {item.getDateFormatted()}\n")
-            self.text.insert(tk.END, "-"*80 + "\n")
+            self.tree.insert("", "end", values=(
+                item.name,
+                item.getSizeConverted(),
+                item.getDateFormatted()
+            ), tags=(item.isDir, getPath_StandardFormat(item.path)))
 
     def run(self):
         self.window.mainloop()

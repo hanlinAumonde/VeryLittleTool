@@ -1,11 +1,12 @@
 import os,time
 
 class FileInfoItem:
-    def __init__(self, name:str, fullPath:str, size:float, lastModifyTime: float):
+    def __init__(self, name:str, fullPath:str, size:float, lastModifyTime: float, isDir:bool = False):
         self.name = name
         self.path = fullPath
         self.size = size
         self.lastModifyTime = lastModifyTime
+        self.isDir = isDir
     
     def getDateFormatted(self) -> str:
         time_obj = time.strptime(time.ctime(self.lastModifyTime))
@@ -60,11 +61,11 @@ def getCalculatedList(curPath:str) -> list:
         for entry in entries:
             if entry.is_dir():
                 (resSize, resTime) = getTotalSizeAndLatestModTime(getPath_StandardFormat(entry.path))
-                resList.append(FileInfoItem(entry.name, entry.path, resSize, resTime))
+                resList.append(FileInfoItem(entry.name, entry.path, resSize, resTime, True))
             else:
                 try:
                     fileInfo = entry.stat()
-                    resList.append(FileInfoItem(entry.name, entry.path, fileInfo.st_size, fileInfo.st_mtime))
+                    resList.append(FileInfoItem(entry.name, entry.path, fileInfo.st_size, fileInfo.st_mtime, False))
                 except OSError as e:
                     print(f"获取文件信息时出错: {e}, 文件名: {entry.name}， 路径: {entry.path}")
     return resList
