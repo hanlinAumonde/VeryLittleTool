@@ -81,3 +81,10 @@ def getListSorted(reslist:list, index:str, asc:bool) -> list:
     else:
         reslist.sort(key=getTime,reverse=False) if asc else reslist.sort(key=getTime,reverse=True)
     return reslist
+
+# 按照windows系统的默认方式打开文件
+def openFile(path:str):
+    os.startfile(path)    
+
+def deleteFile(path:str):
+    os.remove(path)
