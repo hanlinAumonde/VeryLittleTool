@@ -14,6 +14,7 @@ class GUI:
         
         self.path = tk.StringVar()
         self.path.set("请选择文件夹路径")
+        self.firstPath = self.path.get()
         self.fileList = []
         
         #self.folderImage = tk.PhotoImage(file="./img/folder.png")
@@ -33,6 +34,10 @@ class GUI:
         # 创建一个按钮，用于选择文件夹路径
         selectButton = tk.Button(self.windowFrame1, text="选择文件夹", font=("Arial", 12), width=20, height=2, command=self.selectPath)
         selectButton.grid(row=1, column=0)    
+
+        # 创建一个按钮，用于返回上一级目录
+        backButton = tk.Button(self.windowFrame1, text="返回上一级", font=("Arial", 12), width=20, height=2, command=self.goBack, state=tk.DISABLED)
+        backButton.grid(row=2, column=0)
         self.windowFrame1.pack()    
 
         # 创建一个Treeview，用于显示文件信息
@@ -60,8 +65,25 @@ class GUI:
         path = filedialog.askdirectory()
         self.path.set(path)
         if path:
+            if self.firstPath == "请选择文件夹路径":
+                self.firstPath = path
             self.fileList = getCalculatedList(path)
+            self.windowFrame1.winfo_children()[2].config(state=tk.NORMAL)
             self.updateTreeview()
+
+
+    # 返回上一级目录
+    def goBack(self):
+        path = self.path.get()
+        if path == "请选择文件夹路径":
+            return
+        path = path.split("/")
+        path = "/".join(path[:-1])
+        if path == self.firstPath:
+            self.windowFrame1.winfo_children()[2].config(state=tk.DISABLED)
+        self.path.set(path)
+        self.fileList = getCalculatedList(path)
+        self.updateTreeview()
 
     # 双击Treeview的item时触发
     def onDoubleClickItem(self,event):
@@ -74,6 +96,7 @@ class GUI:
         if self.tree.item(item, "tags")[0] == "True":
             self.path.set(path)
             self.fileList = getCalculatedList(path)
+            self.windowFrame1.winfo_children()[2].config(state=tk.NORMAL)
             self.updateTreeview()
         else:
             openFile(path)
